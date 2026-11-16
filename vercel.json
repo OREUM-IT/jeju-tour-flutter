@@ -1,0 +1,9 @@
+{
+  "framework": null,
+  "buildCommand": "bash scripts/build_web.sh",
+  "installCommand": "echo Flutter dependencies are installed during the build",
+  "outputDirectory": "build/web",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://jeju-tour-six.vercel.app/api/:path*" }
+  ]
+}

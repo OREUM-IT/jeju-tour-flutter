@@ -1,0 +1,35 @@
+{
+    "name": "오름잇 · OREUM IT",
+    "short_name": "오름잇",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#F6F6F1",
+    "theme_color": "#367565",
+    "description": "한라산과 제주 올레 여행 플래너",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
