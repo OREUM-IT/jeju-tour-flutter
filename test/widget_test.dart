@@ -76,7 +76,7 @@ void main() {
       addTearDown(api.close);
       await tester.pumpWidget(OreumApp(api: api, store: TripStore(prefs)));
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text('우리 이제\n같이 제주로 떠나요!'), findsOneWidget);
+      expect(find.text('우리 이제\n같이 제주로 떠나는 사이!'), findsOneWidget);
       expect(find.text('건너뛰기'), findsOneWidget);
       expect(find.text('일정 조회'), findsNothing);
       expect(tester.takeException(), isNull);
@@ -107,6 +107,15 @@ void main() {
     addTearDown(api.close);
     await tester.pumpWidget(OreumApp(api: api, store: TripStore(prefs)));
     await tester.pump(const Duration(seconds: 2));
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('일정 조회'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('REPLAY · 시작화면 다시 보기'));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('건너뛰기'), findsOneWidget);
     await tester.tap(find.text('건너뛰기'));
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();

@@ -123,6 +123,7 @@ class _OreumAppState extends State<OreumApp> {
               api: widget.api,
               store: widget.store,
               themeMode: themeMode,
+              onReplay: () => setState(() => introDone = false),
               onTheme: (value) {
                 setState(() => themeMode = value);
                 widget.store.preferences.setString(
@@ -147,11 +148,13 @@ class _Home extends StatefulWidget {
     required this.store,
     required this.themeMode,
     required this.onTheme,
+    required this.onReplay,
   });
   final OreumApi api;
   final TripStore store;
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onTheme;
+  final VoidCallback onReplay;
   @override
   State<_Home> createState() => _HomeState();
 }
@@ -282,6 +285,14 @@ class _HomeState extends State<_Home> {
                     ),
                     const Spacer(),
                     ListTile(
+                      leading: const Icon(Icons.replay),
+                      title: const Text('REPLAY · 시작화면 다시 보기'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        widget.onReplay();
+                      },
+                    ),
+                    ListTile(
                       leading: const Icon(Icons.info_outline),
                       title: const Text('데이터 출처'),
                       onTap: () {
@@ -330,6 +341,14 @@ class _HomeState extends State<_Home> {
                     child: Text(
                       '오름잇 · 바다에서 정상까지, 나만의 제주',
                       style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: widget.onReplay,
+                    icon: const Icon(Icons.replay, size: 16),
+                    label: const Text(
+                      'REPLAY',
+                      style: TextStyle(letterSpacing: 1),
                     ),
                   ),
                   TextButton(onPressed: _sources, child: const Text('데이터 출처')),

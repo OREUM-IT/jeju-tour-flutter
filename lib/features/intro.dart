@@ -134,7 +134,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
-                              'OREUM IT · 오름잇',
+                              'OREUM IT',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -146,7 +146,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                             Divider(height: 1, color: line),
                             const SizedBox(height: 20),
                             Text(
-                              '우리 이제\n같이 제주로 떠나요!',
+                              '우리 이제\n같이 제주로 떠나는 사이!',
                               style: TextStyle(
                                 fontSize: 28,
                                 height: 1.3,
@@ -157,7 +157,7 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                             ),
                             const SizedBox(height: 10),
                             Text(
-                              '바다에서 정상까지, 나만의 제주를 준비하고 있어요.',
+                              '바다에서 정상까지, 테마별 제주 여행을 시작해 보세요!',
                               style: TextStyle(fontSize: 15, color: muted),
                             ),
                             const SizedBox(height: 28),
@@ -246,31 +246,64 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
   }
 }
 
+/// 투어 내비게이터식 단색 앱 아이콘 타일. 한라산·오름 능선과 바다 물결.
 class _LogoTile extends StatelessWidget {
   const _LogoTile({required this.dark});
   final bool dark;
   @override
-  Widget build(BuildContext context) => Container(
-    width: 120,
-    height: 120,
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: dark ? const Color(0xFF232E2A) : Colors.white,
-      borderRadius: BorderRadius.circular(32),
-      boxShadow: [
-        BoxShadow(
-          color: moss.withValues(alpha: dark ? .35 : .18),
-          blurRadius: 32,
-          offset: const Offset(0, 14),
-        ),
-      ],
-    ),
-    child: Image.asset(
-      'assets/images/logo.png',
-      errorBuilder: (_, _, _) =>
-          const Icon(Icons.landscape, color: moss, size: 64),
+  Widget build(BuildContext context) => Semantics(
+    label: '오름잇',
+    child: Container(
+      width: 112,
+      height: 112,
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF4F9A86) : moss,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: CustomPaint(painter: _JejuGlyph()),
     ),
   );
+}
+
+class _JejuGlyph extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final u = size.width / 32;
+    final stroke = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2 * u
+      ..strokeCap = StrokeCap.square
+      ..strokeJoin = StrokeJoin.miter;
+    Offset o(double x, double y) => Offset(x * u, y * u);
+    // 오름 + 한라산 능선
+    canvas.drawPath(
+      Path()
+        ..moveTo(o(6, 20).dx, o(6, 20).dy)
+        ..lineTo(o(10, 15).dx, o(10, 15).dy)
+        ..lineTo(o(13, 17).dx, o(13, 17).dy)
+        ..lineTo(o(18.5, 10).dx, o(18.5, 10).dy)
+        ..lineTo(o(26, 20).dx, o(26, 20).dy),
+      stroke,
+    );
+    // 바다 물결
+    final wave = Path()..moveTo(o(6, 24.5).dx, o(6, 24.5).dy);
+    for (var i = 0; i < 4; i++) {
+      final x = 6.0 + i * 5;
+      wave.quadraticBezierTo(
+        o(x + 2.5, i.isEven ? 22.5 : 26.5).dx,
+        o(x + 2.5, i.isEven ? 22.5 : 26.5).dy,
+        o(x + 5, 24.5).dx,
+        o(x + 5, 24.5).dy,
+      );
+    }
+    canvas.drawPath(wave, stroke..strokeCap = StrokeCap.round);
+    // 해
+    canvas.drawCircle(o(24.5, 8), 1.8 * u, Paint()..color = Colors.white);
+  }
+
+  @override
+  bool shouldRepaint(_JejuGlyph old) => false;
 }
 
 /// 김포(GMP) → 제주(CJU) 비행 경로. 비행기 위치가 진행률을 따라갑니다.
