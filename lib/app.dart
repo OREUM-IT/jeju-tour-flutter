@@ -17,7 +17,7 @@ class OreumApp extends StatefulWidget {
     super.key,
     required this.api,
     required this.store,
-    this.introDuration = const Duration(seconds: 30),
+    this.introDuration = const Duration(seconds: 10),
   });
   final OreumApi api;
   final TripStore store;

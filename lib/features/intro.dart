@@ -10,7 +10,7 @@ class IntroPage extends StatefulWidget {
   const IntroPage({
     super.key,
     required this.onDone,
-    this.duration = const Duration(seconds: 30),
+    this.duration = const Duration(seconds: 10),
   });
   final VoidCallback onDone;
   final Duration duration;
@@ -161,8 +161,9 @@ class _IntroPageState extends State<IntroPage> with TickerProviderStateMixin {
                               style: TextStyle(fontSize: 15, color: muted),
                             ),
                             const SizedBox(height: 28),
-                            _FlightRoute(
+                            _BoardingPass(
                               progress: p,
+                              dark: dark,
                               fg: fg,
                               muted: muted,
                               line: line,
@@ -306,16 +307,21 @@ class _JejuGlyph extends CustomPainter {
   bool shouldRepaint(_JejuGlyph old) => false;
 }
 
-/// 김포(GMP) → 제주(CJU) 비행 경로. 비행기 위치가 진행률을 따라갑니다.
-class _FlightRoute extends StatelessWidget {
-  const _FlightRoute({
+/// 탑승권 모양 카드. 상단 띠·절취선·양쪽 홈이 있고, 그 안에서
+/// 김포(GMP) → 제주(CJU) 비행기가 진행률을 따라 날아갑니다.
+class _BoardingPass extends StatelessWidget {
+  const _BoardingPass({
     required this.progress,
+    required this.dark,
     required this.fg,
     required this.muted,
     required this.line,
   });
   final double progress;
+  final bool dark;
   final Color fg, muted, line;
+
+  static const headerHeight = 40.0;
 
   Widget _airport(String code, String name, CrossAxisAlignment align) => Column(
     crossAxisAlignment: align,
@@ -324,7 +330,8 @@ class _FlightRoute extends StatelessWidget {
       Text(
         code,
         style: TextStyle(
-          fontSize: 18,
+          fontSize: 24,
+          height: 1.1,
           fontWeight: FontWeight.w800,
           letterSpacing: 1,
           color: fg,
@@ -334,50 +341,199 @@ class _FlightRoute extends StatelessWidget {
     ],
   );
 
-  @override
-  Widget build(BuildContext context) => Row(
+  Widget _field(String label, String value, CrossAxisAlignment align) => Column(
+    crossAxisAlignment: align,
+    mainAxisSize: MainAxisSize.min,
     children: [
-      _airport('GMP', '김포', CrossAxisAlignment.start),
-      const SizedBox(width: 14),
-      Expanded(
-        child: SizedBox(
-          height: 36,
-          child: LayoutBuilder(
-            builder: (context, c) {
-              const plane = 22.0;
-              final x = (c.maxWidth - plane) * progress;
-              // 이륙 후 살짝 떠올랐다가 착륙하는 포물선
-              final lift = math.sin(progress * math.pi) * 8;
-              return Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: _DashPainter(
-                        progress: progress,
-                        done: moss,
-                        rest: line,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: x,
-                    top: 18 - plane / 2 - lift,
-                    child: Transform.rotate(
-                      angle: math.pi / 2,
-                      child: const Icon(Icons.flight, size: plane, color: moss),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+          color: muted,
         ),
       ),
-      const SizedBox(width: 14),
-      _airport('CJU', '제주', CrossAxisAlignment.end),
+      const SizedBox(height: 2),
+      Text(
+        value,
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: fg),
+      ),
     ],
   );
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final date =
+        '${now.month.toString().padLeft(2, '0')}.${now.day.toString().padLeft(2, '0')}';
+    final band = dark ? const Color(0xFF4F9A86) : moss;
+    const header = TextStyle(
+      color: Colors.white,
+      fontSize: 11,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 1.8,
+    );
+    return CustomPaint(
+      painter: _TicketPainter(
+        notchY: headerHeight,
+        fill: dark ? const Color(0xFF232E2A) : Colors.white,
+        band: band,
+        border: line,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(
+            height: headerHeight,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Icon(Icons.flight_takeoff, size: 15, color: Colors.white),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'BOARDING PASS',
+                      style: header,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text('OR 1947', style: header),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    _airport('GMP', '김포', CrossAxisAlignment.start),
+                    const SizedBox(width: 12),
+                    Expanded(child: _route(band)),
+                    const SizedBox(width: 12),
+                    _airport('CJU', '제주', CrossAxisAlignment.end),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _field('DATE', date, CrossAxisAlignment.start),
+                    _field('GATE', '오름', CrossAxisAlignment.center),
+                    _field('SEAT', '1947m', CrossAxisAlignment.end),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _route(Color color) => SizedBox(
+    height: 36,
+    child: LayoutBuilder(
+      builder: (context, c) {
+        const plane = 22.0;
+        final x = (c.maxWidth - plane) * progress;
+        // 이륙 후 살짝 떠올랐다가 착륙하는 포물선
+        final lift = math.sin(progress * math.pi) * 8;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _DashPainter(
+                  progress: progress,
+                  done: color,
+                  rest: line,
+                ),
+              ),
+            ),
+            Positioned(
+              left: x,
+              top: 18 - plane / 2 - lift,
+              child: Transform.rotate(
+                angle: math.pi / 2,
+                child: Icon(Icons.flight, size: plane, color: color),
+              ),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+}
+
+/// 둥근 모서리 + 절취선 높이의 양쪽 반원 홈을 가진 티켓 외곽.
+class _TicketPainter extends CustomPainter {
+  _TicketPainter({
+    required this.notchY,
+    required this.fill,
+    required this.band,
+    required this.border,
+  });
+  final double notchY;
+  final Color fill, band, border;
+  static const radius = 16.0, notch = 9.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outline = Path.combine(
+      PathOperation.difference,
+      Path()..addRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          const Radius.circular(radius),
+        ),
+      ),
+      Path()
+        ..addOval(Rect.fromCircle(center: Offset(0, notchY), radius: notch))
+        ..addOval(
+          Rect.fromCircle(center: Offset(size.width, notchY), radius: notch),
+        ),
+    );
+    canvas.drawPath(outline, Paint()..color = fill);
+    canvas.save();
+    canvas.clipPath(outline);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, notchY),
+      Paint()..color = band,
+    );
+    canvas.restore();
+    canvas.drawPath(
+      outline,
+      Paint()
+        ..color = border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+    // 절취선
+    final perforation = Paint()
+      ..color = Colors.white.withValues(alpha: .7)
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+    for (double x = notch + 6; x < size.width - notch - 6; x += 9) {
+      canvas.drawLine(
+        Offset(x, notchY),
+        Offset(math.min(x + 4, size.width - notch - 6), notchY),
+        perforation,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TicketPainter old) =>
+      old.notchY != notchY ||
+      old.fill != fill ||
+      old.band != band ||
+      old.border != border;
 }
 
 class _DashPainter extends CustomPainter {

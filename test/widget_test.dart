@@ -55,7 +55,7 @@ void main() {
   }
 
   for (final width in [360.0, 1280.0]) {
-    testWidgets('Intro runs 30s then enters home at width $width', (
+    testWidgets('Intro runs 10s then enters home at width $width', (
       tester,
     ) async {
       tester.view.physicalSize = Size(width, 800);
@@ -80,10 +80,11 @@ void main() {
       expect(find.text('건너뛰기'), findsOneWidget);
       expect(find.text('일정 조회'), findsNothing);
       expect(tester.takeException(), isNull);
-      await tester.pump(const Duration(seconds: 15));
+      await tester.pump(const Duration(seconds: 4));
       expect(find.text('일정 조회'), findsNothing);
+      expect(find.text('BOARDING PASS'), findsOneWidget);
       expect(find.text('구름 위에서 한라산 날씨를 확인하고 있어요'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 15));
+      await tester.pump(const Duration(seconds: 5));
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
       expect(find.text('건너뛰기'), findsNothing);
