@@ -4,10 +4,18 @@ import 'package:latlong2/latlong.dart';
 import 'common.dart';
 
 class MapPin {
-  const MapPin(this.point, this.label, {this.onTap});
+  const MapPin(
+    this.point,
+    this.label, {
+    this.onTap,
+    this.color = accent,
+    this.size = 42,
+  });
   final LatLng point;
   final String label;
   final VoidCallback? onTap;
+  final Color color;
+  final double size;
 }
 
 class JejuMap extends StatelessWidget {
@@ -19,6 +27,7 @@ class JejuMap extends StatelessWidget {
     this.height = 340,
     this.center,
     this.revision = '',
+    this.fitPoints,
   });
   final List<MapPin> pins;
   final List<LatLng> line;
@@ -26,9 +35,12 @@ class JejuMap extends StatelessWidget {
   final double height;
   final LatLng? center;
   final String revision;
+
+  /// 카메라를 맞출 좌표. 지정하지 않으면 모든 핀과 선을 기준으로 맞춘다.
+  final List<LatLng>? fitPoints;
   @override
   Widget build(BuildContext context) {
-    final points = [...pins.map((p) => p.point), ...line];
+    final points = fitPoints ?? [...pins.map((p) => p.point), ...line];
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: SizedBox(
@@ -66,8 +78,8 @@ class JejuMap extends StatelessWidget {
                   .map(
                     (pin) => Marker(
                       point: pin.point,
-                      width: 42,
-                      height: 48,
+                      width: pin.size,
+                      height: pin.size + 6,
                       child: Tooltip(
                         message: pin.label,
                         child: InkWell(
@@ -75,15 +87,19 @@ class JejuMap extends StatelessWidget {
                           child: Container(
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: accent,
+                              color: pin.color,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: pin.size < 30 ? 2 : 3,
+                              ),
                             ),
                             child: Text(
                               pin.label.length > 3 ? '●' : pin.label,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
+                                fontSize: pin.size < 30 ? 9 : null,
                               ),
                             ),
                           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import '../core/api.dart';
 import '../core/course_planner.dart';
 import '../core/models.dart';
@@ -17,9 +18,15 @@ class BuilderPage extends StatefulWidget {
 
 class _BuilderPageState extends State<BuilderPage> {
   late Future<List<Place>> places = load();
-  Future<List<Place>> load() async => objects(
-    object(await widget.api.get('/course/places'))['places'],
-  ).map(Place.new).toList();
+  List<Place> allPlaces = [];
+  Future<List<Place>> load() async {
+    final list = objects(
+      object(await widget.api.get('/course/places'))['places'],
+    ).map(Place.new).toList();
+    if (mounted) setState(() => allPlaces = list);
+    return list;
+  }
+
   String query = '', category = 'all', transport = 'rent';
   int activeDay = 0, limit = 24;
   DateTime date = DateTime.now().add(const Duration(days: 1));
@@ -102,6 +109,8 @@ class _BuilderPageState extends State<BuilderPage> {
                 ],
               ),
               const SizedBox(height: 16),
+              _builderMap(),
+              const SizedBox(height: 16),
               if (days[activeDay].isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(16),
@@ -162,32 +171,10 @@ class _BuilderPageState extends State<BuilderPage> {
           future: places,
           onRetry: () => setState(() => places = load()),
           builder: (all) {
-            final filtered = all
-                .where(
-                  (p) =>
-                      (category == 'all' || p.category == category) &&
-                      '${p.name} ${p.hours}'.toLowerCase().contains(
-                        query.toLowerCase(),
-                      ),
-                )
-                .toList();
-            final selected = days
-                .expand((d) => d)
-                .where((p) => p.position != null)
-                .toList();
+            final filtered = _filter(all);
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (selected.isNotEmpty) ...[
-                  JejuMap(
-                    revision: selected.map((p) => p.id).join(','),
-                    pins: [
-                      for (var i = 0; i < selected.length; i++)
-                        MapPin(selected[i].position!, '${i + 1}'),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                ],
                 TextField(
                   decoration: InputDecoration(
                     labelText: '제주 장소 검색',
@@ -265,6 +252,75 @@ class _BuilderPageState extends State<BuilderPage> {
       ],
     ],
   );
+  List<Place> _filter(List<Place> all) => all
+      .where(
+        (p) =>
+            (category == 'all' || p.category == category) &&
+            '${p.name} ${p.hours}'.toLowerCase().contains(query.toLowerCase()),
+      )
+      .toList();
+
+  /// 코스를 짜는 동안 함께 보는 지도: 선택한 날의 동선(번호·선)과
+  /// 현재 검색/분류에 맞는 후보 장소(작은 점)를 같이 보여준다.
+  Widget _builderMap() {
+    final day = days[activeDay].where((p) => p.position != null).toList();
+    final route = day.map((p) => p.position!).toList();
+    final inDay = days[activeDay].map((p) => p.id).toSet();
+    final candidates = _filter(allPlaces)
+        .where((p) => p.position != null && !inDay.contains(p.id))
+        .take(limit)
+        .toList();
+    final missing = days[activeDay].length - day.length;
+    var km = 0.0;
+    const distance = Distance();
+    for (var i = 1; i < route.length; i++) {
+      km += distance.as(LengthUnit.Meter, route[i - 1], route[i]) / 1000;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        JejuMap(
+          height: 320,
+          // 동선이 비어 있으면 검색·분류가 바뀔 때 후보 장소에 맞춰 다시 보여준다.
+          revision: route.isNotEmpty
+              ? '$activeDay:${day.map((p) => p.id).join(',')}'
+              : 'candidates:${allPlaces.length}:$category:$query:$limit',
+          fitPoints: route.isNotEmpty
+              ? route
+              : candidates.map((p) => p.position!).toList(),
+          line: route.length >= 2 ? route : const [],
+          pins: [
+            for (final p in candidates)
+              MapPin(
+                p.position!,
+                p.name,
+                color: ink.withValues(alpha: 0.55),
+                size: 22,
+                onTap: () => _details(p),
+              ),
+            for (var i = 0; i < day.length; i++)
+              MapPin(
+                day[i].position!,
+                '${i + 1}',
+                onTap: () => _details(day[i]),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          [
+            if (route.length >= 2)
+              '${activeDay + 1}일차 동선 · 직선거리 약 ${km.toStringAsFixed(1)}km',
+            if (route.length < 2) '${activeDay + 1}일차 동선이 지도에 표시돼요',
+            if (missing > 0) '위치 정보 없는 장소 $missing곳 제외',
+            '회색 점을 눌러 장소를 보고 바로 담을 수 있어요',
+          ].join(' · '),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+
   void _details(Place place) => showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
