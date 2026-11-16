@@ -7,14 +7,23 @@ import 'features/planner.dart';
 import 'features/builder.dart';
 import 'features/saved.dart';
 import 'features/challenge.dart';
+import 'features/intro.dart';
 import 'features/routes.dart';
 import 'features/weather.dart';
 import 'ui/common.dart';
 
 class OreumApp extends StatefulWidget {
-  const OreumApp({super.key, required this.api, required this.store});
+  const OreumApp({
+    super.key,
+    required this.api,
+    required this.store,
+    this.introDuration = const Duration(seconds: 30),
+  });
   final OreumApi api;
   final TripStore store;
+
+  /// 시작 화면(여행 출발 로딩) 표시 시간. `Duration.zero`이면 건너뜁니다.
+  final Duration introDuration;
   @override
   State<OreumApp> createState() => _OreumAppState();
 }
@@ -24,6 +33,7 @@ class _OreumAppState extends State<OreumApp> {
     (m) => m.name == widget.store.preferences.getString('oreum.flutter.theme'),
     orElse: () => ThemeMode.system,
   );
+  late bool introDone = widget.introDuration == Duration.zero;
   ThemeData theme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
     final colors = ColorScheme.fromSeed(
@@ -104,20 +114,35 @@ class _OreumAppState extends State<OreumApp> {
     theme: theme(Brightness.light),
     darkTheme: theme(Brightness.dark),
     themeMode: themeMode,
-    home: _Home(
-      api: widget.api,
-      store: widget.store,
-      themeMode: themeMode,
-      onTheme: (value) {
-        setState(() => themeMode = value);
-        widget.store.preferences.setString('oreum.flutter.theme', value.name);
-      },
+    home: AnimatedSwitcher(
+      duration: const Duration(milliseconds: 600),
+      switchInCurve: Curves.easeOutCubic,
+      child: introDone
+          ? _Home(
+              key: const ValueKey('home'),
+              api: widget.api,
+              store: widget.store,
+              themeMode: themeMode,
+              onTheme: (value) {
+                setState(() => themeMode = value);
+                widget.store.preferences.setString(
+                  'oreum.flutter.theme',
+                  value.name,
+                );
+              },
+            )
+          : IntroPage(
+              key: const ValueKey('intro'),
+              duration: widget.introDuration,
+              onDone: () => setState(() => introDone = true),
+            ),
     ),
   );
 }
 
 class _Home extends StatefulWidget {
   const _Home({
+    super.key,
     required this.api,
     required this.store,
     required this.themeMode,
